@@ -13,15 +13,12 @@ const sentimentLabelKey = {
 };
 
 /**
- * AI insight button + result panel for the journal entry page.
+ * AI insights for recent journals — button intended next to History on home.
  */
 const AiInsightsPanel = ({
-  content,
-  mood,
-  date,
-  tags = [],
   history = [],
-  getLiveContent,
+  limit = 14,
+  compact = false,
 }) => {
   const t = useT();
   const { locale } = useI18n();
@@ -33,12 +30,11 @@ const AiInsightsPanel = ({
   const [error, setError] = useState('');
 
   const enabled = Boolean(config?.enable_ai_insights);
+  const entries = (history || []).filter((e) => e && (e.content || e.mood != null));
 
   const runInsights = async () => {
-    const live = typeof getLiveContent === 'function' ? getLiveContent() : content;
-    const text = (live || '').trim();
-    if (!text) {
-      show(t('ai.needContent'), 'info');
+    if (!entries.length) {
+      show(t('ai.needHistory'), 'info');
       return;
     }
 
@@ -49,15 +45,12 @@ const AiInsightsPanel = ({
 
     try {
       const data = await apiService.getAiInsights({
-        content: text,
-        mood: mood ?? null,
-        date: date || null,
-        tags,
-        history: (history || []).slice(0, 14).map((e) => ({
+        history: entries.slice(0, limit).map((e) => ({
           date: e.date,
           mood: e.mood,
           content: e.content,
         })),
+        limit,
         locale,
       });
       setResult(data);
@@ -75,7 +68,7 @@ const AiInsightsPanel = ({
   }
 
   return (
-    <div style={{ marginTop: '1rem' }}>
+    <>
       <button
         type="button"
         onClick={() => { void runInsights(); }}
@@ -83,27 +76,32 @@ const AiInsightsPanel = ({
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '0.5rem',
-          padding: '0.55rem 1.1rem',
+          gap: '0.4rem',
+          padding: compact ? '0.4rem 0.85rem' : '0.55rem 1.1rem',
           borderRadius: '999px',
           border: '1px solid var(--border)',
           background: 'linear-gradient(135deg, color-mix(in oklab, var(--accent-600), #7c3aed 40%), var(--accent-600))',
           color: '#fff',
           cursor: loading ? 'wait' : 'pointer',
           fontWeight: 600,
-          fontSize: '0.9rem',
+          fontSize: compact ? '0.82rem' : '0.9rem',
           boxShadow: 'var(--shadow-md)',
           opacity: loading ? 0.85 : 1,
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
         }}
       >
-        {loading ? <Loader2 size={16} className="is-spinning" /> : <Sparkles size={16} />}
+        {loading ? <Loader2 size={15} className="is-spinning" /> : <Sparkles size={15} />}
         {loading ? t('ai.generating') : t('ai.button')}
       </button>
 
       {open && (
         <div
           style={{
-            marginTop: '0.85rem',
+            flexBasis: '100%',
+            width: '100%',
+            marginTop: '0.35rem',
+            marginBottom: '0.75rem',
             border: '1px solid var(--border)',
             borderRadius: '16px',
             background: 'var(--bg-card)',
@@ -134,6 +132,10 @@ const AiInsightsPanel = ({
               <X size={18} />
             </button>
           </div>
+
+          <p style={{ margin: '0.5rem 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            {t('ai.basedOnRecent', { n: Math.min(entries.length, limit) })}
+          </p>
 
           {loading && (
             <p style={{ margin: '1rem 0 0', color: 'var(--text-muted)' }}>{t('ai.generatingHint')}</p>
@@ -201,13 +203,14 @@ const AiInsightsPanel = ({
               {result.model && (
                 <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   {t('ai.model', { model: result.model })}
+                  {result.entry_count ? ` · ${t('ai.entryCount', { n: result.entry_count })}` : ''}
                 </p>
               )}
             </div>
           )}
         </div>
       )}
-    </div>
+    </>
   );
 };
 

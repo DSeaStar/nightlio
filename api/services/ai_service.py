@@ -39,62 +39,76 @@ class AIService:
     def generate_insights(
         self,
         *,
-        content: str,
-        mood: Optional[int] = None,
-        date: Optional[str] = None,
-        tags: Optional[List[str]] = None,
         history: Optional[List[Dict[str, Any]]] = None,
         locale: str = "zh",
+        limit: int = 14,
     ) -> Dict[str, Any]:
+        """Analyze recent journal entries (not a single in-progress draft)."""
         if not self.enabled:
             raise AIServiceError("AI insights is not configured (missing API key).", 503)
 
-        text = (content or "").strip()
-        if not text:
-            raise AIServiceError("Journal content is required.", 400)
-        if len(text) > 12000:
-            text = text[:12000] + "\n…(truncated)"
+        entries = list(history or [])
+        if not entries:
+            raise AIServiceError("Need recent journal entries to analyze.", 400)
+
+        # Prefer newest-first from client; take up to limit entries
+        limit = max(3, min(int(limit or 14), 30))
+        entries = entries[:limit]
 
         language = "Simplified Chinese" if str(locale).lower().startswith("zh") else "English"
-        history_lines = self._format_history(history or [])
-        tag_line = ", ".join(tags or []) if tags else "(none)"
-        mood_line = str(mood) if mood is not None else "(unknown)"
+        history_lines = self._format_history(entries)
+        moods = [e.get("mood") for e in entries if e.get("mood") is not None]
+        avg_mood = None
+        if moods:
+            try:
+                avg_mood = round(sum(int(m) for m in moods) / len(moods), 2)
+            except (TypeError, ValueError):
+                avg_mood = None
 
         system = (
             "You are a compassionate journaling coach for the Nightlio mood tracker. "
+            "The user wants a holistic review of their RECENT journals (multiple entries), "
+            "not analysis of a single draft they are currently writing. "
             f"Output ONLY one JSON object. No markdown, no code fences, no extra text. "
             f"Every user-facing string MUST be written in {language}. "
             "Be concise, kind, practical, non-clinical; do not diagnose. "
             "Required keys exactly: summary (string), sentiment (object with label, score, emotions), "
             "tags (string array), trend_prediction (string), suggestions (string array). "
+            "summary: overall insight across recent entries. "
+            "sentiment: overall emotional tone of the period. "
+            "tags: recurring themes/topics across entries (3-8). "
+            "trend_prediction: near-term mood trend based on the sequence. "
+            "suggestions: 2-4 personalized actionable tips. "
             "sentiment.label must be one of: positive, neutral, negative, mixed. "
-            "sentiment.score is a number from 0 to 1. Provide 3-8 tags and 2-4 suggestions."
+            "sentiment.score is 0..1 how positive the period feels overall."
         )
 
         user = (
-            f"Please analyze this journal entry and return the JSON object now.\n\n"
-            f"Entry date: {date or 'unknown'}\n"
-            f"Mood score (1=terrible … 5=amazing): {mood_line}\n"
-            f"Selected tags: {tag_line}\n"
-            f"Recent history (newest last):\n{history_lines}\n\n"
-            f"Journal entry:\n{text}\n\n"
+            f"Please analyze the following recent journal entries and return the JSON object now.\n"
+            f"Entry count: {len(entries)}\n"
+            f"Average mood score (1=terrible … 5=amazing): {avg_mood if avg_mood is not None else 'unknown'}\n"
+            f"Entries (newest first):\n{history_lines}\n\n"
+            "Focus on patterns across days, recurring themes, mood movement, and practical next steps.\n"
             "Remember: respond with JSON only."
         )
 
         raw = self._chat_completion(system=system, user=user)
         data = self._parse_json_object(raw)
-        return self._normalize(data)
+        result = self._normalize(data)
+        result["entry_count"] = len(entries)
+        return result
 
     def _format_history(self, history: List[Dict[str, Any]]) -> str:
         if not history:
             return "(no recent history)"
         lines = []
-        for item in history[-14:]:
+        for item in history:
             d = item.get("date") or "?"
             m = item.get("mood")
             excerpt = str(item.get("content") or "").replace("\n", " ").strip()
-            if len(excerpt) > 120:
-                excerpt = excerpt[:120] + "…"
+            # Allow longer excerpts for multi-entry analysis
+            if len(excerpt) > 280:
+                excerpt = excerpt[:280] + "…"
             lines.append(f"- {d} | mood={m} | {excerpt}")
         return "\n".join(lines)
 

@@ -1,5 +1,6 @@
 import json
-from api.services.ai_service import AIService
+import pytest
+from api.services.ai_service import AIService, AIServiceError
 
 
 def test_normalize_and_parse_json():
@@ -29,3 +30,9 @@ def test_parse_fenced_json():
 ```"""
     data = svc._parse_json_object(raw)
     assert data["summary"] == "ok"
+
+
+def test_generate_insights_requires_history():
+    svc = AIService(api_key="test")
+    with pytest.raises(AIServiceError):
+        svc.generate_insights(history=[], locale="zh")

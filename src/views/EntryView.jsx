@@ -16,7 +16,6 @@ import apiService from '../services/api';
 import { useToast } from '../components/ui/ToastProvider';
 import { useBurner } from '../contexts/BurnerContext';
 import { useT } from '../i18n/I18nContext';
-import AiInsightsPanel from '../components/ai/AiInsightsPanel';
 
 const FALLBACK_DEFAULT_MARKDOWN = `# How was your day?
 
@@ -46,7 +45,6 @@ const EntryView = ({
   editingEntry = null,
   onEntryUpdated,
   onEditMoodSelect,
-  pastEntries = [],
 }) => {
   const t = useT();
   const defaultMarkdown = t('entry.defaultContent') || FALLBACK_DEFAULT_MARKDOWN;
@@ -760,30 +758,6 @@ const EntryView = ({
             groups={groups}
             selectedOptions={selectedOptions}
             onOptionToggle={handleOptionToggle}
-          />
-          <AiInsightsPanel
-            content={markdownContent}
-            mood={selectedMood}
-            date={
-              editingEntry?.date
-              || (() => {
-                const n = new Date();
-                return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
-              })()
-            }
-            tags={(groups || []).flatMap((g) =>
-              (g.options || [])
-                .filter((o) => selectedOptions.includes(o.id))
-                .map((o) => o.name)
-            )}
-            history={pastEntries}
-            getLiveContent={() => {
-              try {
-                return markdownRef.current?.getMarkdown?.() || markdownContent || '';
-              } catch {
-                return markdownContent || '';
-              }
-            }}
           />
           <div style={{ marginTop: '1rem' }}>
             <GroupManager

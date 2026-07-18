@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from flask import Blueprint, jsonify, request
 
@@ -20,6 +20,7 @@ def create_ai_routes(ai_service: AIService):
     @bp.route("/ai/insights", methods=["POST"])
     @require_auth
     def generate_insights():
+        """Analyze recent journal entries (homepage history insights)."""
         user_id = get_current_user_id()
         if user_id is None:
             return jsonify({"error": "Unauthorized"}), 401
@@ -28,42 +29,26 @@ def create_ai_routes(ai_service: AIService):
             return jsonify({"error": "AI insights is not configured on this server."}), 503
 
         data = request.get_json(silent=True) or {}
-        content = data.get("content")
-        if not content or not str(content).strip():
-            return jsonify({"error": "content is required"}), 400
-
-        mood = data.get("mood")
-        mood_value: Optional[int] = None
-        if mood is not None and mood != "":
-            try:
-                mood_value = int(mood)
-            except (TypeError, ValueError):
-                return jsonify({"error": "mood must be an integer 1-5"}), 400
-            if mood_value < 1 or mood_value > 5:
-                return jsonify({"error": "mood must be between 1 and 5"}), 400
-
-        tags = data.get("tags") or []
-        if not isinstance(tags, list):
-            return jsonify({"error": "tags must be an array"}), 400
-        tags = [str(t) for t in tags][:20]
 
         history = data.get("history") or []
         if not isinstance(history, list):
-            return jsonify({"error": "history must be an array"}), 400
+            return jsonify({"error": "history must be an array of recent entries"}), 400
         history = _sanitize_history(history)
+        if not history:
+            return jsonify({"error": "history must include at least one journal entry"}), 400
 
         locale = str(data.get("locale") or "zh")[:10]
-        date = data.get("date")
-        date_value = str(date) if date is not None else None
+        limit = data.get("limit", 14)
+        try:
+            limit_value = int(limit)
+        except (TypeError, ValueError):
+            limit_value = 14
 
         try:
             result = ai_service.generate_insights(
-                content=str(content),
-                mood=mood_value,
-                date=date_value,
-                tags=tags,
                 history=history,
                 locale=locale,
+                limit=limit_value,
             )
             return jsonify(result), 200
         except AIServiceError as exc:
@@ -76,12 +61,12 @@ def create_ai_routes(ai_service: AIService):
 
 def _sanitize_history(history: List[Any]) -> List[Dict[str, Any]]:
     cleaned: List[Dict[str, Any]] = []
-    for item in history[:20]:
+    for item in history[:30]:
         if not isinstance(item, dict):
             continue
         entry: Dict[str, Any] = {
             "date": str(item.get("date") or "")[:32],
-            "content": str(item.get("content") or "")[:400],
+            "content": str(item.get("content") or "")[:800],
         }
         mood = item.get("mood")
         if mood is not None:
@@ -89,5 +74,8 @@ def _sanitize_history(history: List[Any]) -> List[Dict[str, Any]]:
                 entry["mood"] = int(mood)
             except (TypeError, ValueError):
                 pass
+        # Skip completely empty shells
+        if not entry["content"].strip() and entry.get("mood") is None:
+            continue
         cleaned.append(entry)
     return cleaned

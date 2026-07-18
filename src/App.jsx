@@ -27,6 +27,7 @@ import { useGroups } from "./hooks/useGroups";
 import { useStatistics } from "./hooks/useStatistics";
 import MusicDock from './components/mood/MusicDock'
 import { useT } from './i18n/I18nContext';
+import AiInsightsPanel from './components/ai/AiInsightsPanel';
 import "./App.css";
 
 const MusicDockGate = () => {
@@ -188,7 +189,6 @@ const AppContent = () => {
                     onEntryUpdated={handleEntryUpdated}
                     onEditMoodSelect={handleEditMoodSelect}
                     onSelectMood={handleMoodSelect}
-                    pastEntries={pastEntries}
                   />
                 } />
                 <Route path="stats" element={
@@ -212,9 +212,29 @@ const AppContent = () => {
                     <GoalsSection onNavigateToGoals={() => navigate('goals')} />
                   </section>
                   <section className="app-wide" aria-label={t('history.title')} id="history-section">
-                    <h2 style={{ margin: '0 0 var(--space-1) 0', paddingLeft: 'calc(var(--space-1) / 2)', paddingTop: 0, paddingBottom: 'calc(var(--space-1) / 2)', color: 'var(--text)' }}>
-                      {searchResults !== null ? `${t('common.searchResults')} (${searchResults.length})` : t('history.title')}
-                    </h2>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '0.75rem',
+                        flexWrap: 'wrap',
+                        margin: '0 0 var(--space-1) 0',
+                        paddingLeft: 'calc(var(--space-1) / 2)',
+                        paddingTop: 0,
+                        paddingBottom: 'calc(var(--space-1) / 2)',
+                      }}
+                    >
+                      <h2 style={{ margin: 0, color: 'var(--text)', flex: '1 1 auto' }}>
+                        {searchResults !== null ? `${t('common.searchResults')} (${searchResults.length})` : t('history.title')}
+                      </h2>
+                      {/* Button sits beside History; result panel wraps to full width via flex-basis */}
+                      <AiInsightsPanel
+                        history={pastEntries}
+                        limit={14}
+                        compact
+                      />
+                    </div>
                     <HistoryList 
                       entries={displayEntries}
                       loading={historyLoading}
