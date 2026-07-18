@@ -196,9 +196,12 @@ const EntryView = ({
           }
         } else {
           const now = new Date();
+          const yyyy = now.getFullYear();
+          const mm = String(now.getMonth() + 1).padStart(2, '0');
+          const dd = String(now.getDate()).padStart(2, '0');
           const createPayload = {
             ...payload,
-            date: now.toLocaleDateString(),
+            date: `${yyyy}-${mm}-${dd}`,
             time: now.toISOString(),
           };
 
@@ -424,40 +427,158 @@ const EntryView = ({
     };
   };
 
-  const handleCancel = async () => {
+  const hasMeaningfulContent = useCallback(() => {
+    const content = (latestPayloadRef.current?.payload?.content ?? markdownContent ?? '').trim();
+    return Boolean(content) && content !== defaultMarkdownTrimmed;
+  }, [markdownContent, defaultMarkdownTrimmed]);
+
+  const readEditorContent = useCallback(() => {
+    try {
+      const fromEditor = markdownRef.current?.getMarkdown?.();
+      if (typeof fromEditor === 'string') {
+        if (fromEditor !== markdownContent) {
+          setMarkdownContent(fromEditor);
+        }
+        return fromEditor;
+      }
+    } catch {
+      /* fall through */
+    }
+    return markdownContent || '';
+  }, [markdownContent]);
+
+  /** Explicit save (does not navigate away). */
+  const handleSave = useCallback(async () => {
+    if (isBurnerMode) {
+      show(t('entry.savingOffBurner'), 'info');
+      return false;
+    }
+
+    if (!selectedMood) {
+      show(t('mood.pickMood'), 'info');
+      return false;
+    }
+
+    const content = readEditorContent();
+    const trimmed = content.trim();
+    if (!trimmed || trimmed === defaultMarkdownTrimmed) {
+      show(t('entry.emptyNotSaved'), 'info');
+      return false;
+    }
+
     clearAutosaveTimer();
 
-    if (!isEditing && !isBurnerMode && saveInFlightRef.current && !activeEntryIdRef.current) {
-      show('Autosave is still finishing. Please tap Cancel again in a moment.', 'info');
+    const payload = {
+      mood: Number(selectedMood),
+      content,
+      selected_options: normalizeSelectedOptions(selectedOptions),
+    };
+    const snapshot = buildSnapshot({
+      mood: payload.mood,
+      content: payload.content,
+      selectedOptions: payload.selected_options,
+    });
+    latestPayloadRef.current = { payload, snapshot };
+
+    if (snapshot === lastSavedSnapshotRef.current && activeEntryIdRef.current) {
+      show(t('entry.savedToast'), 'success');
+      setSaveState('saved');
+      return true;
+    }
+
+    const ok = await executeAutosave(payload, snapshot);
+    if (ok) {
+      // Keep the entry after user intentionally saved — never treat as discardable draft
+      createdByAutosaveRef.current = false;
+      show(t('entry.savedToast'), 'success');
+      return true;
+    }
+
+    show(t('entry.saveFailed'), 'error');
+    return false;
+  }, [
+    isBurnerMode,
+    selectedMood,
+    readEditorContent,
+    defaultMarkdownTrimmed,
+    clearAutosaveTimer,
+    selectedOptions,
+    executeAutosave,
+    show,
+    t,
+  ]);
+
+  /**
+   * Back / done: flush any pending autosave, then leave.
+   * IMPORTANT: do NOT delete autosaved entries (previous cancel discarded user writing).
+   */
+  const handleBack = useCallback(async () => {
+    clearAutosaveTimer();
+
+    if (isBurnerMode) {
+      if (!isEditing) {
+        resetDraftComposer();
+      }
+      if (typeof onBack === 'function') onBack();
       return;
     }
 
-    skipAutosaveFlushRef.current = true;
-
-    if (isBurnerMode && !isEditing) {
-      resetDraftComposer();
+    if (saveInFlightRef.current) {
+      show(t('entry.stillSaving'), 'info');
+      return;
     }
 
-    if (!isEditing && createdByAutosaveRef.current && activeEntryIdRef.current) {
-      try {
-        const draftId = activeEntryIdRef.current;
-        await apiService.deleteMoodEntry(draftId);
-        if (typeof onEntryDeleted === 'function') {
-          onEntryDeleted(draftId);
-        }
-        show('Draft discarded.', 'success');
-      } catch (error) {
-        console.error('Failed to discard autosaved draft:', error);
-        skipAutosaveFlushRef.current = false;
-        show('Could not discard the autosaved draft. Please try again.', 'error');
+    // Pull latest text from the editor before deciding whether to save
+    const content = readEditorContent();
+    const trimmed = content.trim();
+    const meaningful = Boolean(trimmed) && trimmed !== defaultMarkdownTrimmed;
+
+    if (meaningful) {
+      const payload = {
+        mood: selectedMood ? Number(selectedMood) : null,
+        content,
+        selected_options: normalizeSelectedOptions(selectedOptions),
+      };
+      if (!payload.mood) {
+        show(t('mood.pickMood'), 'info');
         return;
       }
+      const snapshot = buildSnapshot({
+        mood: payload.mood,
+        content: payload.content,
+        selectedOptions: payload.selected_options,
+      });
+      latestPayloadRef.current = { payload, snapshot };
+
+      if (snapshot !== lastSavedSnapshotRef.current) {
+        const ok = await executeAutosave(payload, snapshot);
+        if (!ok) {
+          show(t('entry.saveFailed'), 'error');
+          return;
+        }
+      }
+      createdByAutosaveRef.current = false;
     }
+
+    // Allow unmount without a second flush fight
+    skipAutosaveFlushRef.current = true;
 
     if (typeof onBack === 'function') {
       onBack();
     }
-  };
+  }, [
+    clearAutosaveTimer,
+    isBurnerMode,
+    isEditing,
+    readEditorContent,
+    defaultMarkdownTrimmed,
+    selectedMood,
+    selectedOptions,
+    executeAutosave,
+    show,
+    t,
+    onBack,
+  ]);
 
   const saveStatusMeta = (() => {
     if (isBurnerMode) {
@@ -534,9 +655,9 @@ const EntryView = ({
                 <button
                   type="button"
                   className="entry-icon-button"
-                  onClick={handleCancel}
-                  aria-label={t('entry.cancel')}
-                  title={t('entry.cancel')}
+                  onClick={handleBack}
+                  aria-label={t('entry.saveAndBack')}
+                  title={t('entry.saveAndBack')}
                 >
                   <ArrowLeft size={16} aria-hidden="true" />
                 </button>
@@ -549,8 +670,35 @@ const EntryView = ({
                   />
                   <span>{saveStatusMeta.label}</span>
                 </div>
+
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => { void handleSave(); }}
+                  disabled={isBurnerMode || saveState === 'saving'}
+                  style={{
+                    marginLeft: '0.25rem',
+                    padding: '0.4rem 0.95rem',
+                    borderRadius: '999px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: isBurnerMode || saveState === 'saving' ? 'not-allowed' : 'pointer',
+                    opacity: isBurnerMode || saveState === 'saving' ? 0.6 : 1,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t('entry.save')}
+                </button>
               </div>
             </MoodDisplay>
+            <p style={{
+              margin: '0.5rem 0 0',
+              fontSize: '0.8rem',
+              color: 'var(--text-muted)',
+              lineHeight: 1.4,
+            }}>
+              {t('entry.autosaveHint')}
+            </p>
             {isEditing && (
               <button
                 type="button"
@@ -568,7 +716,7 @@ const EntryView = ({
                   transition: 'all 0.2s ease',
                 }}
               >
-                Change mood
+                {t('entry.changeMood')}
               </button>
             )}
           </div>
@@ -584,7 +732,7 @@ const EntryView = ({
               }}
             >
               <p style={{ marginTop: 0, marginBottom: '0.75rem', fontWeight: 600, color: 'var(--text)' }}>
-                Pick a new mood
+                {t('entry.pickNewMood')}
               </p>
               <MoodPicker onMoodSelect={handleMoodSelection} />
               <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
@@ -601,7 +749,7 @@ const EntryView = ({
                     color: 'color-mix(in oklab, var(--text), transparent 30%)',
                   }}
                 >
-                  Cancel
+                  {t('entry.cancel')}
                 </button>
               </div>
             </div>
