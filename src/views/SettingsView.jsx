@@ -17,6 +17,11 @@ const SettingsView = () => {
       label: t('settings.moodMusic'),
       description: t('settings.moodMusicDesc'),
     },
+    {
+      key: 'enable_ai_insights',
+      label: t('ai.settingsLabel'),
+      description: t('ai.settingsDesc'),
+    },
   ];
 
   const sectionStyle = {

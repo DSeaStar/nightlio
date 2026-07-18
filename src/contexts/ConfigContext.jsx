@@ -13,6 +13,7 @@ export const ConfigProvider = ({ children }) => {
   const [config, setConfig] = useState({
     enable_google_oauth: false,
     enable_mood_music: false,
+    enable_ai_insights: false,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

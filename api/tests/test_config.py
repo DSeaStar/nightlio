@@ -9,11 +9,12 @@ def test_public_config_shape():
     assert set(public.keys()) == {
         "enable_google_oauth",
         "enable_mood_music",
+        "enable_ai_insights",
         "google_client_id",
     }
     assert isinstance(public["enable_google_oauth"], bool)
     assert isinstance(public["enable_mood_music"], bool)
-    # Only google oauth remains
+    assert isinstance(public["enable_ai_insights"], bool)
 
 
 def test_public_config_default_values():
@@ -21,4 +22,4 @@ def test_public_config_default_values():
     public = config_to_public_dict(cfg)
     assert public["enable_google_oauth"] in (True, False)
     assert public["enable_mood_music"] in (True, False)
-    # Web3 flag removed
+    assert public["enable_ai_insights"] in (True, False)

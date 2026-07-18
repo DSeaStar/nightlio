@@ -162,6 +162,14 @@ class ApiService {
     return this.request(`/api/music/vibe?tag=${encodedTag}`);
   }
 
+  // AI insights (server-side LLM proxy)
+  async getAiInsights(payload) {
+    return this.request('/api/ai/insights', {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    });
+  }
+
   // Groups endpoints
   async getGroups() {
     return this.request('/api/groups');

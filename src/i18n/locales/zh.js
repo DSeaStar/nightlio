@@ -226,6 +226,26 @@ const zh = {
     noVibe: '暂无氛围推荐',
     selectMood: '请选择心情',
   },
+  ai: {
+    button: 'AI 洞察',
+    title: 'AI 洞察',
+    generating: '分析中…',
+    generatingHint: '模型正在阅读本篇日记与近期心情记录…',
+    failed: 'AI 洞察失败，请稍后再试。',
+    needContent: '请先写一些日记内容，再使用 AI 洞察。',
+    summary: '洞察总结',
+    sentiment: '情感分析',
+    sentimentPositive: '积极',
+    sentimentNeutral: '中性',
+    sentimentNegative: '消极',
+    sentimentMixed: '复杂/混合',
+    tags: '智能标签',
+    trend: '情绪趋势预测',
+    suggestions: '个性化建议',
+    model: '模型：{model}',
+    settingsLabel: 'AI 洞察',
+    settingsDesc: '通过服务端大模型 API 生成本篇日记的洞察。',
+  },
 };
 
 export default zh;

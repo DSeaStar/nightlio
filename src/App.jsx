@@ -188,6 +188,7 @@ const AppContent = () => {
                     onEntryUpdated={handleEntryUpdated}
                     onEditMoodSelect={handleEditMoodSelect}
                     onSelectMood={handleMoodSelect}
+                    pastEntries={pastEntries}
                   />
                 } />
                 <Route path="stats" element={

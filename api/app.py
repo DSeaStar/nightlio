@@ -10,6 +10,11 @@ env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
 
 # Support running as a package (api.*) and from within the api/ directory
+MusicService = None  # type: ignore
+create_music_routes = None  # type: ignore
+AIService = None  # type: ignore
+create_ai_routes = None  # type: ignore
+
 try:
     from api.database import MoodDatabase
     from api.services.mood_service import MoodService
@@ -26,8 +31,6 @@ try:
     from api.routes.achievement_routes import create_achievement_routes
     from api.utils.error_handlers import setup_error_handlers
     from api.utils.security_headers import add_security_headers
-    from api.services.mus_service import MusicService
-    from api.routes.mus_routes import create_music_routes
 except Exception:  # fallback for running from inside api/
     from database import MoodDatabase
     from services.mood_service import MoodService
@@ -44,8 +47,29 @@ except Exception:  # fallback for running from inside api/
     from routes.achievement_routes import create_achievement_routes
     from utils.error_handlers import setup_error_handlers
     from utils.security_headers import add_security_headers
-    from services.mus_service import MusicService
-    from routes.mus_routes import create_music_routes
+
+# Optional modules (older published images may not include music)
+try:
+    try:
+        from api.services.mus_service import MusicService  # type: ignore
+        from api.routes.mus_routes import create_music_routes  # type: ignore
+    except Exception:
+        from services.mus_service import MusicService  # type: ignore
+        from routes.mus_routes import create_music_routes  # type: ignore
+except Exception:
+    MusicService = None  # type: ignore
+    create_music_routes = None  # type: ignore
+
+try:
+    try:
+        from api.services.ai_service import AIService  # type: ignore
+        from api.routes.ai_routes import create_ai_routes  # type: ignore
+    except Exception:
+        from services.ai_service import AIService  # type: ignore
+        from routes.ai_routes import create_ai_routes  # type: ignore
+except Exception:
+    AIService = None  # type: ignore
+    create_ai_routes = None  # type: ignore
 
 def create_app(config_name="default"):
     """Application factory pattern"""
@@ -91,8 +115,23 @@ def create_app(config_name="default"):
     user_service = UserService(db)
     achievement_service = AchievementService(db)
 
-    # Initialize music service
-    music_service = MusicService(db)
+    # Optional music service
+    music_service = MusicService(db) if MusicService is not None else None
+
+    # AI insights (OpenAI-compatible; keys stay server-side)
+    ai_cfg = cfg
+    if ai_cfg is None:
+        try:
+            ai_cfg = get_config()
+        except Exception:
+            ai_cfg = None
+    ai_service = None
+    if AIService is not None:
+        ai_service = AIService(
+            api_key=getattr(ai_cfg, "AI_API_KEY", None) or "",
+            base_url=getattr(ai_cfg, "AI_BASE_URL", None) or "https://api.x.ai/v1",
+            model=getattr(ai_cfg, "AI_MODEL", None) or "grok-4.5",
+        )
 
     # Register blueprints
     app.register_blueprint(create_auth_routes(user_service), url_prefix="/api")
@@ -104,6 +143,8 @@ def create_app(config_name="default"):
     )
     app.register_blueprint(create_misc_routes(), url_prefix="/api")
     app.register_blueprint(create_config_routes(), url_prefix="/api")
+    if ai_service is not None and create_ai_routes is not None:
+        app.register_blueprint(create_ai_routes(ai_service), url_prefix="/api")
 
     # Expose services for optional blueprints (e.g., OAuth) to reuse
     try:
@@ -120,8 +161,13 @@ def create_app(config_name="default"):
         except Exception:
             cfg = None
 
-    # Register music blueprint only when enabled.
-    if cfg and getattr(cfg, "ENABLE_MOOD_MUSIC", False):
+    # Register music blueprint only when enabled and available.
+    if (
+        cfg
+        and getattr(cfg, "ENABLE_MOOD_MUSIC", False)
+        and music_service is not None
+        and create_music_routes is not None
+    ):
         app.register_blueprint(create_music_routes(music_service), url_prefix="/api")
 
     if cfg and getattr(cfg, "ENABLE_GOOGLE_OAUTH", False):

@@ -227,6 +227,26 @@ const en = {
     noVibe: 'No vibe detected',
     selectMood: 'Select a mood',
   },
+  ai: {
+    button: 'AI Insights',
+    title: 'AI Insights',
+    generating: 'Analyzing…',
+    generatingHint: 'The model is reading your entry and recent mood history…',
+    failed: 'AI insights failed. Please try again later.',
+    needContent: 'Write some journal text before asking for AI insights.',
+    summary: 'Insight summary',
+    sentiment: 'Sentiment analysis',
+    sentimentPositive: 'Positive',
+    sentimentNeutral: 'Neutral',
+    sentimentNegative: 'Negative',
+    sentimentMixed: 'Mixed',
+    tags: 'Suggested tags',
+    trend: 'Mood trend forecast',
+    suggestions: 'Personalized suggestions',
+    model: 'Model: {model}',
+    settingsLabel: 'AI Insights',
+    settingsDesc: 'Generate journal insights via a server-side LLM API.',
+  },
 };
 
 export default en;

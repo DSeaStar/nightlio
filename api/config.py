@@ -108,6 +108,7 @@ class ConfigData:
     # Feature flags
     ENABLE_GOOGLE_OAUTH: bool
     ENABLE_MOOD_MUSIC: bool
+    ENABLE_AI_INSIGHTS: bool
 
     # Google OAuth
     GOOGLE_CLIENT_ID: Optional[str]
@@ -115,6 +116,11 @@ class ConfigData:
     GOOGLE_CALLBACK_URL: Optional[str]
 
     # Web3 removed
+
+    # AI (OpenAI-compatible; default SpaceXAI / xAI)
+    AI_API_KEY: Optional[str]
+    AI_BASE_URL: str
+    AI_MODEL: str
 
     # Auth
     JWT_SECRET: str
@@ -139,6 +145,21 @@ def _load_config_from_env() -> ConfigData:
     enable_mood_music = is_truthy(os.getenv("ENABLE_MOOD_MUSIC"))
     # Web3 removed
 
+    # AI key: AI_API_KEY preferred, then XAI_API_KEY (SpaceXAI / xAI)
+    ai_api_key = (
+        os.getenv("AI_API_KEY")
+        or os.getenv("XAI_API_KEY")
+        or None
+    )
+    # Enable when explicitly on, or when a key is present (self-host convenience)
+    enable_ai = is_truthy(os.getenv("ENABLE_AI_INSIGHTS")) or bool(ai_api_key)
+    ai_base_url = (
+        os.getenv("AI_BASE_URL")
+        or os.getenv("XAI_BASE_URL")
+        or "https://api.x.ai/v1"
+    )
+    ai_model = os.getenv("AI_MODEL") or os.getenv("XAI_MODEL") or "grok-4.5"
+
     # Secrets pulled from env; don't default to empty string.
     jwt_secret = (
         os.getenv("JWT_SECRET")
@@ -157,10 +178,14 @@ def _load_config_from_env() -> ConfigData:
         PORT=port,
         ENABLE_GOOGLE_OAUTH=enable_google,
         ENABLE_MOOD_MUSIC=enable_mood_music,
+        ENABLE_AI_INSIGHTS=enable_ai and bool(ai_api_key),
         GOOGLE_CLIENT_ID=os.getenv("GOOGLE_CLIENT_ID"),
         GOOGLE_CLIENT_SECRET=os.getenv("GOOGLE_CLIENT_SECRET"),
         GOOGLE_CALLBACK_URL=os.getenv("GOOGLE_CALLBACK_URL"),
         # Web3 fields removed
+        AI_API_KEY=ai_api_key,
+        AI_BASE_URL=ai_base_url,
+        AI_MODEL=ai_model,
         JWT_SECRET=jwt_secret,
         DEFAULT_SELF_HOST_ID=os.getenv("DEFAULT_SELF_HOST_ID")
         or "selfhost_default_user",
@@ -188,6 +213,7 @@ def config_to_public_dict(cfg: ConfigData) -> Dict[str, Any]:
     return {
         "enable_google_oauth": bool(cfg.ENABLE_GOOGLE_OAUTH),
         "enable_mood_music": bool(cfg.ENABLE_MOOD_MUSIC),
+        "enable_ai_insights": bool(cfg.ENABLE_AI_INSIGHTS),
         # Expose the Google Client ID so the frontend can initialize GSI correctly
         "google_client_id": cfg.GOOGLE_CLIENT_ID,
     }
