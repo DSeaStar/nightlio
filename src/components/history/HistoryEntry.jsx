@@ -4,6 +4,7 @@ import apiService from '../../services/api';
 import { useToast } from '../ui/ToastProvider';
 import EntryModal from './EntryModal';
 import { useT } from '../../i18n/I18nContext';
+import { localizeOptionName } from '../../utils/groupLabels';
 
 const HistoryEntry = ({ entry, onDelete, onEdit }) => {
   const { icon: IconComponent, color } = getMoodIcon(entry.mood);
@@ -124,7 +125,7 @@ const HistoryEntry = ({ entry, onDelete, onEdit }) => {
         <div style={{ marginTop: '0.75rem' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {entry.selections.map(selection => (
-              <span key={selection.id} className="tag">{selection.name}</span>
+              <span key={selection.id} className="tag">{localizeOptionName(selection.name, t)}</span>
             ))}
           </div>
         </div>

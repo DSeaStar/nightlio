@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Settings, X } from 'lucide-react';
+import { useT } from '../../i18n/I18nContext';
+import { localizeGroupName, localizeOptionName } from '../../utils/groupLabels';
 
 const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
+  const t = useT();
   const [showManager, setShowManager] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [newOptionName, setNewOptionName] = useState('');
@@ -61,7 +64,7 @@ const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
           }}
         >
           <Settings size={16} />
-          Manage Categories
+          {t('groups.manage')}
         </button>
       </div>
     );
@@ -93,7 +96,7 @@ const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
             fontWeight: '600',
           }}
         >
-          Manage Categories
+          {t('groups.manageTitle')}
         </h3>
         <button
           onClick={() => setShowManager(false)}
@@ -112,12 +115,12 @@ const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
       {/* Create New Group */}
       <div style={{ marginBottom: '2rem' }}>
             <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text)', opacity: 0.9, fontSize: '1rem' }}>
-          Create New Category
+          {t('groups.createCategory')}
         </h4>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <input
             type="text"
-            placeholder="Category name (e.g., Activities, Weather)"
+            placeholder={t('groups.categoryPlaceholder')}
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleCreateGroup()}
@@ -144,7 +147,7 @@ const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
               opacity: !newGroupName.trim() || isCreatingGroup ? 0.6 : 1,
             }}
           >
-            {isCreatingGroup ? 'Creating...' : 'Create'}
+            {isCreatingGroup ? t('groups.creating') : t('groups.create')}
           </button>
         </div>
       </div>
@@ -153,7 +156,7 @@ const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
       {groups.length > 0 && (
         <div style={{ marginBottom: '2rem' }}>
           <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text)', opacity: 0.9, fontSize: '1rem' }}>
-            Add Option to Category
+            {t('groups.addOption')}
           </h4>
           <div
             style={{
@@ -174,16 +177,16 @@ const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
                 minWidth: '150px',
               }}
             >
-              <option value="">Select category...</option>
+              <option value="">{t('groups.selectCategory')}</option>
               {groups.map(group => (
                 <option key={group.id} value={group.id}>
-                  {group.name}
+                  {localizeGroupName(group.name, t)}
                 </option>
               ))}
             </select>
       <input
               type="text"
-              placeholder="Option name (e.g., happy, tired)"
+              placeholder={t('groups.optionPlaceholder')}
               value={newOptionName}
               onChange={(e) => setNewOptionName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleCreateOption()}
@@ -211,7 +214,7 @@ const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
                 opacity: (!newOptionName.trim() || !selectedGroupForOption || isCreatingOption) ? 0.6 : 1,
               }}
             >
-              {isCreatingOption ? 'Adding...' : 'Add'}
+              {isCreatingOption ? t('groups.adding') : t('groups.add')}
             </button>
           </div>
         </div>
@@ -221,7 +224,7 @@ const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
       {groups.length > 0 && (
         <div>
           <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text)', opacity: 0.9, fontSize: '1rem' }}>
-            Current Categories
+            {t('groups.currentCategories')}
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {groups.map(group => (
@@ -241,7 +244,7 @@ const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
                     marginBottom: '0.5rem',
                   }}
                 >
-                  {group.name} ({group.options.length} options)
+                  {localizeGroupName(group.name, t)} ({t('groups.optionsCount', { n: group.options.length })})
                 </div>
                 <div
                   style={{
@@ -262,7 +265,7 @@ const GroupManager = ({ groups, onCreateGroup, onCreateOption }) => {
                         color: 'var(--text-muted)',
                       }}
                     >
-                      {option.name}
+                      {localizeOptionName(option.name, t)}
                     </span>
                   ))}
                 </div>

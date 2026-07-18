@@ -1,4 +1,8 @@
+import { useT } from '../../i18n/I18nContext';
+import { localizeGroupName, localizeOptionName } from '../../utils/groupLabels';
+
 const GroupSelector = ({ groups, selectedOptions, onOptionToggle }) => {
+  const t = useT();
   if (!groups.length) return null;
 
   return (
@@ -24,7 +28,7 @@ const GroupSelector = ({ groups, selectedOptions, onOptionToggle }) => {
               letterSpacing: '0.5px',
             }}
           >
-            {group.name}
+            {localizeGroupName(group.name, t)}
           </h3>
           <div
             style={{
@@ -69,7 +73,7 @@ const GroupSelector = ({ groups, selectedOptions, onOptionToggle }) => {
                   }
                 }}
               >
-                {option.name}
+                {localizeOptionName(option.name, t)}
               </button>
             ))}
           </div>
