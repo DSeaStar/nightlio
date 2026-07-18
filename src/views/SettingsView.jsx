@@ -1,38 +1,78 @@
 import { useConfig } from '../contexts/ConfigContext';
+import { useI18n, useT } from '../i18n/I18nContext';
 
 const SettingsView = () => {
   const { config, loading } = useConfig();
+  const t = useT();
+  const { locale, setLocale } = useI18n();
 
   const featureFlags = [
     {
       key: 'enable_google_oauth',
-      label: 'Google Login',
-      description: 'Enable Google OAuth-based authentication.',
+      label: t('settings.googleLogin'),
+      description: t('settings.googleLoginDesc'),
     },
     {
       key: 'enable_mood_music',
-      label: 'Mood Music',
-      description: 'Play mood-based music suggestions from the mood picker.',
+      label: t('settings.moodMusic'),
+      description: t('settings.moodMusicDesc'),
     },
   ];
 
+  const sectionStyle = {
+    marginTop: '1rem',
+    border: '1px solid var(--border)',
+    borderRadius: '12px',
+    padding: '1rem',
+    background: 'var(--surface)',
+  };
+
   return (
     <div style={{ textAlign: 'left' }}>
-      <h2 style={{ marginTop: 0, color: 'var(--text)' }}>Settings</h2>
+      <h2 style={{ marginTop: 0, color: 'var(--text)' }}>{t('settings.title')}</h2>
 
-      <section
-        style={{
-          marginTop: '1rem',
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          padding: '1rem',
-          background: 'var(--surface)',
-        }}
-        aria-label="Feature flags"
-      >
-        <h3 style={{ marginTop: 0, marginBottom: '0.5rem', color: 'var(--text)' }}>Feature flags</h3>
+      <section style={sectionStyle} aria-label={t('settings.language')}>
+        <h3 style={{ marginTop: 0, marginBottom: '0.5rem', color: 'var(--text)' }}>
+          {t('settings.language')}
+        </h3>
         <p style={{ marginTop: 0, marginBottom: '0.75rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          These are currently server-managed. Editable toggles can be added here later.
+          {t('common.languageHint')}
+        </p>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {[
+            { code: 'zh', label: t('common.chinese') },
+            { code: 'en', label: t('common.english') },
+          ].map((opt) => {
+            const active = locale === opt.code;
+            return (
+              <button
+                key={opt.code}
+                type="button"
+                onClick={() => setLocale(opt.code)}
+                aria-pressed={active}
+                style={{
+                  padding: '0.5rem 1rem',
+                  borderRadius: '10px',
+                  border: `1px solid ${active ? 'var(--accent, #6366f1)' : 'var(--border)'}`,
+                  background: active ? 'var(--accent, #6366f1)' : 'transparent',
+                  color: active ? '#fff' : 'var(--text)',
+                  cursor: 'pointer',
+                  fontWeight: active ? 600 : 400,
+                }}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section style={sectionStyle} aria-label={t('settings.featureFlags')}>
+        <h3 style={{ marginTop: 0, marginBottom: '0.5rem', color: 'var(--text)' }}>
+          {t('settings.featureFlags')}
+        </h3>
+        <p style={{ marginTop: 0, marginBottom: '0.75rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          {t('settings.featureFlagsHint')}
         </p>
 
         {featureFlags.map((flag) => {
@@ -60,7 +100,11 @@ const SettingsView = () => {
                 <strong style={{ color: 'var(--text)' }}>{flag.label}</strong>
                 <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.86rem' }}>
                   {flag.description}
-                  {loading ? ' (loading...)' : isEnabled ? ' (enabled)' : ' (disabled)'}
+                  {loading
+                    ? ` (${t('common.loading')})`
+                    : isEnabled
+                      ? ` (${t('common.enabled')})`
+                      : ` (${t('common.disabled')})`}
                 </span>
               </span>
             </label>

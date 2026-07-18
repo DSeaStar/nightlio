@@ -3,21 +3,23 @@ import { Target, Trash2, CheckCircle, Calendar } from 'lucide-react';
 import { useToast } from '../ui/ToastProvider';
 import GoalStatsCalendar from './GoalStatsCalendar';
 import Modal from '../ui/Modal';
+import { useT } from '../../i18n/I18nContext';
 
 const GoalCard = ({ goal, onDelete, onUpdateProgress }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const { show } = useToast();
+  const t = useT();
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this goal?')) return;
+    if (!window.confirm(t('goals.deleteConfirm'))) return;
     setIsDeleting(true);
     
     // Simulate API call delay
     setTimeout(() => {
       onDelete(goal.id);
-      show('Goal deleted successfully', 'success');
+      show(t('goals.deleted'), 'success');
       setIsDeleting(false);
     }, 500);
   };
@@ -28,22 +30,22 @@ const GoalCard = ({ goal, onDelete, onUpdateProgress }) => {
     try {
       const localVal = typeof localStorage !== 'undefined' ? localStorage.getItem(`goal_done_${goal.id}`) : null;
       if (localVal === today) {
-        show('Already completed for today', 'info');
+        show(t('goals.alreadyToday'), 'info');
         return;
       }
     } catch {
       // localStorage access failed
     }
     if (goal.last_completed_date === today) {
-      show('Already completed for today', 'info');
+      show(t('goals.alreadyToday'), 'info');
       return;
     }
     if (goal.completed >= goal.total) {
-      show('Goal already completed for this period!', 'info');
+      show(t('goals.alreadyPeriod'), 'info');
       return;
     }
     onUpdateProgress(goal.id);
-    show('Progress updated!', 'success');
+    show(t('goals.progressUpdated'), 'success');
   };
 
   const progressPercentage = (goal.completed / goal.total) * 100;
@@ -203,7 +205,7 @@ const GoalCard = ({ goal, onDelete, onUpdateProgress }) => {
         }}
       >
         <CheckCircle size={14} />
-        {isDoneToday ? 'Completed' : 'Mark as done'}
+        {isDoneToday ? t('goals.completed') : t('goals.markDone')}
       </button>
       <Modal open={showStats} title="Goal Statistics" onClose={() => setShowStats(false)}>
         <GoalStatsCalendar goalId={goal.id} />

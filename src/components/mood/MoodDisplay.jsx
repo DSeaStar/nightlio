@@ -1,12 +1,15 @@
 import { MOODS } from '../../utils/moodUtils';
+import { useT } from '../../i18n/I18nContext';
 
 const MoodDisplay = ({ moodValue, size = 32, showLabel = true, children = null }) => {
+  const t = useT();
   const mood = MOODS.find(m => m.value === moodValue);
   const isIconOnly = !showLabel;
   
   if (!mood) return null;
   
   const IconComponent = mood.icon;
+  const label = t(mood.labelKey || 'mood.unknown');
   
   return (
     <div
@@ -48,7 +51,7 @@ const MoodDisplay = ({ moodValue, size = 32, showLabel = true, children = null }
               color: mood.color,
             }}
           >
-            Feeling {mood.label}
+            {label}
           </span>
         )}
       </div>

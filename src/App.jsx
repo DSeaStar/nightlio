@@ -26,6 +26,7 @@ import { useMoodData } from "./hooks/useMoodData";
 import { useGroups } from "./hooks/useGroups";
 import { useStatistics } from "./hooks/useStatistics";
 import MusicDock from './components/mood/MusicDock'
+import { useT } from './i18n/I18nContext';
 import "./App.css";
 
 const MusicDockGate = () => {
@@ -38,6 +39,7 @@ const MusicDockGate = () => {
 const AppContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const t = useT();
   
   // Custom hooks
   const { pastEntries, setPastEntries, loading: historyLoading, error: historyError, refreshHistory } = useMoodData();
@@ -205,12 +207,12 @@ const AppContent = () => {
             <Routes>
               <Route index element={
                 <>
-                  <section className="app-wide" aria-label="Goals section">
+                  <section className="app-wide" aria-label={t('goals.section')}>
                     <GoalsSection onNavigateToGoals={() => navigate('goals')} />
                   </section>
-                  <section className="app-wide" aria-label="History entries" id="history-section">
+                  <section className="app-wide" aria-label={t('history.title')} id="history-section">
                     <h2 style={{ margin: '0 0 var(--space-1) 0', paddingLeft: 'calc(var(--space-1) / 2)', paddingTop: 0, paddingBottom: 'calc(var(--space-1) / 2)', color: 'var(--text)' }}>
-                      {searchResults !== null ? `Search Results (${searchResults.length})` : 'History'}
+                      {searchResults !== null ? `${t('common.searchResults')} (${searchResults.length})` : t('history.title')}
                     </h2>
                     <HistoryList 
                       entries={displayEntries}
@@ -239,7 +241,7 @@ const AppContent = () => {
             navigate('/dashboard');
           }
         }}
-        label="Scroll to top"
+        label={t('app.scrollToTop')}
       />
       <MusicDockGate />
     </>

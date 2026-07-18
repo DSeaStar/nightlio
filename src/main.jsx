@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { applyTransparentFavicon } from './utils/iconUtils.js'
+import { I18nProvider } from './i18n/I18nContext.jsx'
 
 // Try to remove the background from the favicon at runtime (non-destructive)
 // No-op if it fails; keeps original favicon
@@ -12,7 +13,9 @@ applyTransparentFavicon({ src: '/logo.png', threshold: 0 }).catch(() => {});
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <I18nProvider>
+        <App />
+      </I18nProvider>
     </BrowserRouter>
   </StrictMode>,
 )

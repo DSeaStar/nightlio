@@ -6,6 +6,7 @@ import { useConfig } from '../contexts/ConfigContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useBurner } from '../contexts/BurnerContext';
 import { useToast } from './ui/ToastProvider';
+import { useT } from '../i18n/I18nContext';
 
 import './Header.css';
 import SearchBar from './search/SearchBar';
@@ -67,6 +68,7 @@ const Header = ({ currentStreak, pastEntries, onSearch, showSearch = true }) => 
   const { theme, cycle } = useTheme();
   const { isBurnerMode, toggleBurnerMode } = useBurner();
   const { show } = useToast();
+  const t = useT();
   const [showAvatar, setShowAvatar] = useState(true);
 
   const handleSearchShortcut = useCallback(
@@ -92,10 +94,10 @@ const Header = ({ currentStreak, pastEntries, onSearch, showSearch = true }) => 
       const input = document.getElementById('global-search-input');
       if (input) {
         input.focus();
-        show('Search focused — search not yet implemented', 'info', 1500);
+        show(t('header.searchNotImplemented'), 'info', 1500);
       }
     },
-    [show, showSearch]
+    [show, showSearch, t]
   );
 
   useEffect(() => {
@@ -114,7 +116,7 @@ const Header = ({ currentStreak, pastEntries, onSearch, showSearch = true }) => 
           {currentStreak > 0 && (
             <div className="header__streakBadge">
               <Flame size={14} strokeWidth={2} />
-              <span>{currentStreak} Day Streak</span>
+              <span>{t('header.dayStreak', { n: currentStreak })}</span>
             </div>
           )}
         </div>
@@ -124,7 +126,7 @@ const Header = ({ currentStreak, pastEntries, onSearch, showSearch = true }) => 
             <SearchBar
               entries={pastEntries}
               onSearch={onSearch}
-              placeholder="Search..."
+              placeholder={t('common.search')}
               searchFields={['content', 'date']}
             />
           </div>
@@ -136,8 +138,8 @@ const Header = ({ currentStreak, pastEntries, onSearch, showSearch = true }) => 
               type="button"
               onClick={cycle}
               className="header__button header__iconButton"
-              title={`Theme: ${theme}`}
-              aria-label="Toggle theme"
+              title={t('header.theme', { theme })}
+              aria-label={t('header.toggleTheme')}
             >
               {theme === 'dark' ? <Sun size={14} strokeWidth={2} /> : <Moon size={14} strokeWidth={2} />}
             </button>
@@ -146,8 +148,8 @@ const Header = ({ currentStreak, pastEntries, onSearch, showSearch = true }) => 
               type="button"
               onClick={toggleBurnerMode}
               className={`header__button header__iconButton${isBurnerMode ? ' header__iconButton--active' : ''}`}
-              title={`Burner mode: ${isBurnerMode ? 'on' : 'off'}`}
-              aria-label="Toggle burner mode"
+              title={isBurnerMode ? t('header.burnerOn') : t('header.burnerOff')}
+              aria-label={t('header.toggleBurner')}
               aria-pressed={isBurnerMode}
             >
               <Flame size={14} strokeWidth={2} />
@@ -171,7 +173,7 @@ const Header = ({ currentStreak, pastEntries, onSearch, showSearch = true }) => 
               className="header__button"
             >
               <LogOut size={14} />
-              Logout
+              {t('common.logout')}
             </button>
           </div>
         )}

@@ -1,13 +1,15 @@
 import { Home, BarChart3, Trophy, Settings, Target } from 'lucide-react';
 import { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useT } from '../../i18n/I18nContext';
 
 const Sidebar = ({ onLoadStatistics }) => {
+  const t = useT();
   const items = [
-    { key: '/dashboard', label: 'Home', icon: Home, end: true },
-    { key: '/dashboard/goals', label: 'Goals', icon: Target },
-    { key: '/dashboard/stats', label: 'Statistics', icon: BarChart3 },
-    { key: '/dashboard/achievements', label: 'Achievements', icon: Trophy },
+    { key: '/dashboard', label: t('nav.home'), icon: Home, end: true },
+    { key: '/dashboard/goals', label: t('nav.goals'), icon: Target },
+    { key: '/dashboard/stats', label: t('nav.statistics'), icon: BarChart3 },
+    { key: '/dashboard/achievements', label: t('nav.achievements'), icon: Trophy },
   ];
 
   const location = useLocation();
@@ -30,9 +32,9 @@ const Sidebar = ({ onLoadStatistics }) => {
                 style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: 'transparent', outline: 'none' }}
               />
             </div>
-            <strong style={{ color: 'var(--text)', letterSpacing: '-0.01em', fontSize: '1.5rem', fontWeight: '700' }}>Nightlio</strong>
+            <strong style={{ color: 'var(--text)', letterSpacing: '-0.01em', fontSize: '1.5rem', fontWeight: '700' }}>{t('app.name')}</strong>
           </div>
-          <span style={{ color: 'var(--text)' , opacity: 0.85, fontSize: '0.875rem', paddingLeft: '0.25rem' }}>Your daily mood companion.</span>
+          <span style={{ color: 'var(--text)' , opacity: 0.85, fontSize: '0.875rem', paddingLeft: '0.25rem' }}>{t('app.tagline')}</span>
         </div>
 
         <div className="sidebar__sections">
@@ -55,10 +57,10 @@ const Sidebar = ({ onLoadStatistics }) => {
           <NavLink
             to="/dashboard/settings"
             className={({ isActive }) => `sidebar__item ${isActive ? 'is-active' : ''}`}
-            title="Settings"
+            title={t('nav.settings')}
           >
             <Settings size={18} style={{ flexShrink: 0 }} />
-            <span>Settings</span>
+            <span>{t('nav.settings')}</span>
           </NavLink>
         </div>
       </div>

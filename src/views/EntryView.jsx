@@ -15,11 +15,11 @@ import MDArea from '../components/MarkdownArea.jsx';
 import apiService from '../services/api';
 import { useToast } from '../components/ui/ToastProvider';
 import { useBurner } from '../contexts/BurnerContext';
+import { useT } from '../i18n/I18nContext';
 
-const DEFAULT_MARKDOWN = `# How was your day?
+const FALLBACK_DEFAULT_MARKDOWN = `# How was your day?
 
 Write about your thoughts, feelings, and experiences...`;
-const DEFAULT_MARKDOWN_TRIMMED = DEFAULT_MARKDOWN.trim();
 const AUTOSAVE_DEBOUNCE_MS = 1200;
 
 const normalizeSelectedOptions = (optionIds = []) => (
@@ -46,12 +46,15 @@ const EntryView = ({
   onEntryUpdated,
   onEditMoodSelect,
 }) => {
+  const t = useT();
+  const defaultMarkdown = t('entry.defaultContent') || FALLBACK_DEFAULT_MARKDOWN;
+  const defaultMarkdownTrimmed = defaultMarkdown.trim();
   const isEditing = Boolean(editingEntry);
   const initialSelectionIds = editingEntry?.selections?.map((selection) => selection.id) ?? [];
 
   const [selectedOptions, setSelectedOptions] = useState(initialSelectionIds);
   const [showMoodPicker, setShowMoodPicker] = useState(false);
-  const [markdownContent, setMarkdownContent] = useState(editingEntry?.content || DEFAULT_MARKDOWN);
+  const [markdownContent, setMarkdownContent] = useState(editingEntry?.content || defaultMarkdown);
   const [activeEntryId, setActiveEntryId] = useState(editingEntry?.id ?? null);
   const [saveState, setSaveState] = useState('idle');
   const [lastSavedAt, setLastSavedAt] = useState(null);
@@ -116,14 +119,14 @@ const EntryView = ({
 
     setSelectedOptions([]);
     setActiveEntryId(null);
-    setMarkdownContent(DEFAULT_MARKDOWN);
+    setMarkdownContent(defaultMarkdown);
     createdByAutosaveRef.current = false;
     skipAutosaveFlushRef.current = false;
 
     isHydratingEditorRef.current = true;
     const instance = markdownRef.current?.getInstance?.();
     if (instance && typeof instance.setMarkdown === 'function') {
-      instance.setMarkdown(DEFAULT_MARKDOWN);
+      instance.setMarkdown(defaultMarkdown);
     }
     queueMicrotask(() => {
       isHydratingEditorRef.current = false;
@@ -131,7 +134,7 @@ const EntryView = ({
 
     lastSavedSnapshotRef.current = buildSnapshot({
       mood: selectedMood,
-      content: DEFAULT_MARKDOWN,
+      content: defaultMarkdown,
       selectedOptions: [],
     });
     setLastSavedAt(null);
@@ -335,7 +338,7 @@ const EntryView = ({
     }
 
     const trimmed = payload.content.trim();
-    const hasMeaningfulContent = Boolean(trimmed) && trimmed !== DEFAULT_MARKDOWN_TRIMMED;
+    const hasMeaningfulContent = Boolean(trimmed) && trimmed !== defaultMarkdownTrimmed;
 
     if (!hasMeaningfulContent) {
       setSaveState(activeEntryIdRef.current ? 'saved' : 'idle');
@@ -394,12 +397,12 @@ const EntryView = ({
 
   const resetDraftComposer = () => {
     isHydratingEditorRef.current = true;
-    markdownRef.current?.getInstance?.()?.setMarkdown(DEFAULT_MARKDOWN);
+    markdownRef.current?.getInstance?.()?.setMarkdown(defaultMarkdown);
     queueMicrotask(() => {
       isHydratingEditorRef.current = false;
     });
 
-    setMarkdownContent(DEFAULT_MARKDOWN);
+    setMarkdownContent(defaultMarkdown);
     setSelectedOptions([]);
     setShowMoodPicker(false);
     setSaveErrorMessage('');
@@ -407,14 +410,14 @@ const EntryView = ({
 
     const resetSnapshot = buildSnapshot({
       mood: selectedMood,
-      content: DEFAULT_MARKDOWN,
+      content: defaultMarkdown,
       selectedOptions: [],
     });
     lastSavedSnapshotRef.current = resetSnapshot;
     latestPayloadRef.current = {
       payload: {
         mood: selectedMood ? Number(selectedMood) : null,
-        content: DEFAULT_MARKDOWN,
+        content: defaultMarkdown,
         selected_options: [],
       },
       snapshot: resetSnapshot,
@@ -459,28 +462,28 @@ const EntryView = ({
   const saveStatusMeta = (() => {
     if (isBurnerMode) {
       return {
-        label: 'Saving is turned off in burner mode.',
+        label: t('entry.savingOffBurner'),
         Icon: CloudOff,
       };
     }
 
     if (saveState === 'saving') {
       return {
-        label: 'Saving...',
+        label: t('entry.saving'),
         Icon: Loader2,
       };
     }
 
     if (saveState === 'dirty') {
       return {
-        label: 'Unsaved changes',
+        label: t('entry.unsaved'),
         Icon: AlertCircle,
       };
     }
 
     if (saveState === 'error') {
       return {
-        label: saveErrorMessage || 'Autosave error',
+        label: saveErrorMessage || t('entry.autosaveError'),
         Icon: AlertCircle,
       };
     }
@@ -490,13 +493,13 @@ const EntryView = ({
         ? lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : '';
       return {
-        label: timestamp ? `Saved at ${timestamp}` : 'All changes saved',
+        label: timestamp ? t('entry.savedAt', { time: timestamp }) : t('entry.allSaved'),
         Icon: CheckCircle2,
       };
     }
 
     return {
-      label: 'Waiting for changes',
+      label: t('entry.waiting'),
       Icon: Clock3,
     };
   })();
@@ -505,7 +508,7 @@ const EntryView = ({
     return (
       <div style={{ marginTop: '1rem' }}>
         <h3 style={{ marginTop: 0 }}>
-          Pick your mood to start an entry
+          {t('mood.pickMood')}
         </h3>
         <MoodPicker onMoodSelect={handleMoodSelection} />
       </div>
@@ -522,7 +525,7 @@ const EntryView = ({
               fontSize: '0.85rem',
               color: 'color-mix(in oklab, var(--text), transparent 40%)',
             }}>
-              Editing entry from <strong style={{ color: 'var(--text)' }}>{editingEntry.date}</strong>
+              {t('entry.editingFrom')} <strong style={{ color: 'var(--text)' }}>{editingEntry.date}</strong>
             </div>
           )}
           <div style={{ marginBottom: '1rem' }}>
@@ -532,8 +535,8 @@ const EntryView = ({
                   type="button"
                   className="entry-icon-button"
                   onClick={handleCancel}
-                  aria-label="Cancel"
-                  title="Cancel"
+                  aria-label={t('entry.cancel')}
+                  title={t('entry.cancel')}
                 >
                   <ArrowLeft size={16} aria-hidden="true" />
                 </button>
@@ -620,7 +623,7 @@ const EntryView = ({
         <div className="entry-right">
           <MDArea
             ref={markdownRef}
-            initialMarkdown={editingEntry?.content || DEFAULT_MARKDOWN}
+            initialMarkdown={editingEntry?.content || defaultMarkdown}
             onChange={handleEditorChange}
           />
         </div>

@@ -1,10 +1,12 @@
 import { MOODS } from '../../utils/moodUtils';
 import apiService from '../../services/api';
 import { useConfig } from '../../contexts/ConfigContext';
+import { useT } from '../../i18n/I18nContext';
 import './MoodPicker.css';
 
 const MoodPicker = ({ onMoodSelect }) => {
   const { config } = useConfig();
+  const t = useT();
   
   //Handler to manage both saving the mood and playing music
   const handleMoodClick = async (mood) => {
@@ -33,13 +35,15 @@ const MoodPicker = ({ onMoodSelect }) => {
     <div className="mood-grid">
       {MOODS.map(mood => {
         const IconComponent = mood.icon;
+        const label = t(mood.labelKey || 'mood.unknown');
         return (
           <button
             key={mood.value}
             onClick={() => handleMoodClick(mood)} 
             className="mood-button"
             style={{ color: mood.color }}
-            title={mood.label}
+            title={label}
+            aria-label={label}
           >
             <IconComponent size={40} strokeWidth={1.5} />
           </button>

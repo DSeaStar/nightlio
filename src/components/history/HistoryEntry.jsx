@@ -3,12 +3,14 @@ import { getMoodIcon } from '../../utils/moodUtils';
 import apiService from '../../services/api';
 import { useToast } from '../ui/ToastProvider';
 import EntryModal from './EntryModal';
+import { useT } from '../../i18n/I18nContext';
 
 const HistoryEntry = ({ entry, onDelete, onEdit }) => {
   const { icon: IconComponent, color } = getMoodIcon(entry.mood);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [open, setOpen] = useState(false);
+  const t = useT();
 
   // helpers to split title/body and strip markdown for previews
   const stripMd = (s = '') => s
@@ -46,16 +48,16 @@ const HistoryEntry = ({ entry, onDelete, onEdit }) => {
 
   const { show } = useToast();
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this entry?')) return false;
+    if (!window.confirm(t('history.deleteConfirm'))) return false;
     setIsDeleting(true);
     try {
       await apiService.deleteMoodEntry(entry.id);
       onDelete(entry.id);
-      show('Entry deleted', 'success');
+      show(t('history.deleted'), 'success');
       return true;
     } catch (error) {
       console.error('Failed to delete entry:', error);
-      show('Failed to delete entry. Please try again.', 'error');
+      show(t('history.deleteFailed'), 'error');
       return false;
     } finally {
       setIsDeleting(false);

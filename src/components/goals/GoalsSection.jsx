@@ -3,8 +3,10 @@ import { Target, Plus, ArrowRight, Calendar, CheckCircle } from 'lucide-react';
 import Skeleton from '../ui/Skeleton';
 import apiService from '../../services/api';
 import AddGoalCard from './AddGoalCard';
+import { useT } from '../../i18n/I18nContext';
 
 const GoalsSection = ({ onNavigateToGoals }) => {
+  const t = useT();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -205,6 +207,7 @@ const GoalsSection = ({ onNavigateToGoals }) => {
 };
 
 const GoalPreviewCard = ({ goal, onMarkComplete }) => {
+  const t = useT();
   const [isHovered, setIsHovered] = useState(false);
   const progressPercentage = (goal.completed / goal.total) * 100;
   const isCompletedWeek = goal.completed >= goal.total;
@@ -337,7 +340,7 @@ const GoalPreviewCard = ({ goal, onMarkComplete }) => {
         }}
       >
         <CheckCircle size={14} />
-        {isDoneToday ? 'Completed' : 'Mark as done'}
+        {isDoneToday ? t('goals.completed') : t('goals.markDone')}
       </button>
     </div>
   );

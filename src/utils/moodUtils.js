@@ -11,11 +11,11 @@ const cssVar = (name, fallback) => {
 };
 
 export const MOODS = [
-  { icon: Frown, value: 1, color: 'var(--mood-1)', label: 'Terrible', tag: 'dark+ambient' },
-  { icon: Frown, value: 2, color: 'var(--mood-2)', label: 'Bad', tag: 'melancholic' },
-  { icon: Meh,   value: 3, color: 'var(--mood-3)', label: 'Okay', tag: 'lofi+chill' },
-  { icon: Smile, value: 4, color: 'var(--mood-4)', label: 'Good', tag: 'upbeat+pop' },
-  { icon: Heart, value: 5, color: 'var(--mood-5)', label: 'Amazing', tag: 'synthwave+energy' },
+  { icon: Frown, value: 1, color: 'var(--mood-1)', label: 'Terrible', labelKey: 'mood.terrible', tag: 'dark+ambient' },
+  { icon: Frown, value: 2, color: 'var(--mood-2)', label: 'Bad', labelKey: 'mood.bad', tag: 'melancholic' },
+  { icon: Meh,   value: 3, color: 'var(--mood-3)', label: 'Okay', labelKey: 'mood.okay', tag: 'lofi+chill' },
+  { icon: Smile, value: 4, color: 'var(--mood-4)', label: 'Good', labelKey: 'mood.good', tag: 'upbeat+pop' },
+  { icon: Heart, value: 5, color: 'var(--mood-5)', label: 'Amazing', labelKey: 'mood.amazing', tag: 'synthwave+energy' },
 ];
 
 export const getMoodIcon = (moodValue) => {
@@ -28,20 +28,30 @@ export const getMoodIcon = (moodValue) => {
   return { icon: mood.icon, color: resolved };
 };
 
-export const getMoodLabel = (moodValue) => {
+export const getMoodLabel = (moodValue, t) => {
   const mood = MOODS.find(m => m.value === moodValue);
-  return mood ? mood.label : 'Unknown';
+  if (!mood) {
+    return typeof t === 'function' ? t('mood.unknown') : 'Unknown';
+  }
+  if (typeof t === 'function' && mood.labelKey) {
+    return t(mood.labelKey);
+  }
+  return mood.label;
 };
 
-export const formatEntryTime = (entry) => {
+export const formatEntryTime = (entry, options = {}) => {
+  const { locale = undefined, atWord = 'at' } = options;
   if (entry.created_at) {
     const date = new Date(entry.created_at);
-    const time = date.toLocaleTimeString([], {
+    const time = date.toLocaleTimeString(locale || undefined, {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true,
+      hour12: locale ? !String(locale).startsWith('zh') : true,
     });
-    return `${entry.date} at ${time}`;
+    if (!atWord) {
+      return `${entry.date} ${time}`;
+    }
+    return `${entry.date} ${atWord} ${time}`;
   }
   return entry.date;
 };

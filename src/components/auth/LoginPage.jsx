@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useConfig } from '../../contexts/ConfigContext';
+import { useI18n, useT } from '../../i18n/I18nContext';
 import './LoginPage.css';
 
 // Prefer runtime config-provided client ID to avoid build-time mismatch.
@@ -41,6 +42,8 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
   const { config } = useConfig();
+  const t = useT();
+  const { locale, setLocale } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -81,7 +84,7 @@ const LoginPage = () => {
   const handleGoogleResponse = useCallback(
     async (response) => {
       if (!response?.credential) {
-        setMessage('Google response was empty. Please try again.');
+        setMessage(t('login.emptyGoogle'));
         return;
       }
 
@@ -91,18 +94,18 @@ const LoginPage = () => {
       try {
         const result = await login(response.credential);
         if (!result.success) {
-          setMessage(result.error || 'Login failed. Please try again.');
+          setMessage(result.error || t('login.loginFailed'));
         } else {
           navigate('/dashboard', { replace: true });
         }
       } catch (error) {
         console.error('Login with Google failed.', error);
-        setMessage('Login failed. Please try again.');
+        setMessage(t('login.loginFailed'));
       } finally {
         setIsLoading(false);
       }
     },
-    [login, navigate],
+    [login, navigate, t],
   );
 
 
@@ -152,7 +155,7 @@ const LoginPage = () => {
     };
 
     const handleError = () => {
-      setMessage('Failed to load Google services. Please check your internet connection.');
+      setMessage(t('login.googleLoadFailed'));
     };
 
     script.addEventListener('load', handleLoad);
@@ -163,28 +166,28 @@ const LoginPage = () => {
       script.removeEventListener('load', handleLoad);
       script.removeEventListener('error', handleError);
     };
-  }, [googleClientId, handleGoogleResponse]);
+  }, [googleClientId, handleGoogleResponse, t]);
 
   useEffect(() => {
     if (!config.enable_google_oauth) return undefined;
     if (!googleClientId) {
-      setMessage('Google OAuth is enabled but GOOGLE_CLIENT_ID is not configured.');
+      setMessage(t('login.googleNotConfigured'));
       return undefined;
     }
 
     return initializeGoogle();
-  }, [config.enable_google_oauth, googleClientId, initializeGoogle]);
+  }, [config.enable_google_oauth, googleClientId, initializeGoogle, t]);
 
   const handleGoogleLogin = useCallback(() => {
     if (!config.enable_google_oauth) return;
 
     if (typeof window === 'undefined') {
-      setMessage('Google services not loaded. Please refresh the page.');
+      setMessage(t('login.googleNotLoaded'));
       return;
     }
 
     if (!window.google?.accounts?.id) {
-      setMessage('Google services not loaded. Please refresh the page.');
+      setMessage(t('login.googleNotLoaded'));
       return;
     }
 
@@ -212,9 +215,9 @@ const LoginPage = () => {
       });
     } catch (error) {
       console.error('Google sign-in prompt failed.', error);
-      setMessage('Sign-in failed. Please try refreshing the page.');
+      setMessage(t('login.signInFailed'));
     }
-  }, [config.enable_google_oauth]);
+  }, [config.enable_google_oauth, t]);
 
   const handleSelfHostContinue = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -246,14 +249,14 @@ const LoginPage = () => {
             />
             Nightlio
           </h1>
-          <p className="login-page__brand-subtitle" style={{ marginBottom: 0 }}>Your daily mood companion.</p>
+          <p className="login-page__brand-subtitle" style={{ marginBottom: 0 }}>{t('login.subtitle')}</p>
         </div>
 
         <div style={{ marginTop: '0.5rem' }}>
           <p className="login-page__description" style={{ marginBottom: '1.5rem', fontSize: '0.925rem' }}>
             {isSelfHost
-              ? 'Click continue to start using Nightlio locally.'
-              : 'Sign in to continue tracking your mood journey.'}
+              ? t('login.selfHostDesc')
+              : t('login.googleDesc')}
           </p>
 
           {message && <p className="login-page__message" style={{ marginBottom: '1rem' }}>{message}</p>}
@@ -265,7 +268,7 @@ const LoginPage = () => {
               onClick={handleSelfHostContinue}
               disabled={isLoading}
             >
-              {isLoading ? 'Loading…' : 'Continue'}
+              {isLoading ? t('common.loading') : t('login.continue')}
             </button>
           ) : (
             <button
@@ -300,9 +303,53 @@ const LoginPage = () => {
               <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center' }}>
                 {isLoading ? <LoadingSpinner /> : <GoogleIcon />}
               </span>
-              <span>{isLoading ? 'Signing in…' : 'Sign in with Google'}</span>
+              <span>{isLoading ? t('login.signingIn') : t('login.signInGoogle')}</span>
             </button>
           )}
+
+          <div
+            style={{
+              marginTop: '1.25rem',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
+            role="group"
+            aria-label={t('common.language')}
+          >
+            <button
+              type="button"
+              className="login-page__button"
+              onClick={() => setLocale('zh')}
+              style={{
+                padding: '0.4rem 0.85rem',
+                fontSize: '0.85rem',
+                opacity: locale === 'zh' ? 1 : 0.65,
+                background: locale === 'zh' ? 'var(--accent, #6366f1)' : 'transparent',
+                border: '1px solid var(--border, #dadce0)',
+                color: locale === 'zh' ? '#fff' : 'inherit',
+                width: 'auto',
+              }}
+            >
+              {t('common.chinese')}
+            </button>
+            <button
+              type="button"
+              className="login-page__button"
+              onClick={() => setLocale('en')}
+              style={{
+                padding: '0.4rem 0.85rem',
+                fontSize: '0.85rem',
+                opacity: locale === 'en' ? 1 : 0.65,
+                background: locale === 'en' ? 'var(--accent, #6366f1)' : 'transparent',
+                border: '1px solid var(--border, #dadce0)',
+                color: locale === 'en' ? '#fff' : 'inherit',
+                width: 'auto',
+              }}
+            >
+              {t('common.english')}
+            </button>
+          </div>
 
           <div className="login-page__footer" style={{ 
             marginTop: '1.75rem', 
@@ -316,8 +363,8 @@ const LoginPage = () => {
             <Lock size={12} aria-hidden="true" style={{ flexShrink: 0 }} />
             <span>
               {isSelfHost
-                ? 'No external authentication required.'
-                : 'We only use your Google account for authentication.'}
+                ? t('login.selfHostFooter')
+                : t('login.googleFooter')}
             </span>
           </div>
         </div>
